@@ -2,4 +2,5 @@
 *.db3
 *.sqlite3
 data/raw/lichess.pgn
+data/raw/reduced_lichess.pgn
 .venv/
