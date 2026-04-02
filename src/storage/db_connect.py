@@ -5,7 +5,7 @@ connection = sqlite3.connect('chess_data.db')
 cursor = connection.cursor()
 
 headers_to_extract = ['Site', 'Date', 'White', 'Black', 'Result', 'WhiteElo', 'BlackElo','ECO','TimeControl', 'Result','Termination']
-with open("../../data/raw/truncated_lichess_file.pgn") as game_file:
+with open("../../docs/Mock_data/truncated_lichess_file.pgn") as game_file:
     print("Data storage initiated...")
     for line in range(10):
         game = chess.read_game(game_file)
