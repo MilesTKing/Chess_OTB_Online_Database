@@ -1,5 +1,6 @@
 *.db
 *.db3
 *.sqlite3
-data/raw/
+data/raw/lichess/
+data/raw/processed/
 .venv/
