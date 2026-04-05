@@ -4,5 +4,4 @@
 data/raw/pgn/
 data/raw/processed/
 .venv/
-logs/
 __pycache__
