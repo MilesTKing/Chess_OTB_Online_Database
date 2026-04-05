@@ -1,10 +1,10 @@
 from pathlib import Path
 import time
-lichess_file = Path('../../data/raw/lichess/lichess.pgn')
-reduced_file = Path('../../data/raw/lichess/reduced_lichess.pgn')
+lichess_file = Path('../../data/raw/pgn/reduced_lichess.pgn')
+reduced_file = Path('../../data/raw/pgn/super_reduced_lichess.pgn')
 
 
-max_file_size = 10000000000
+max_file_size = 10000000
 file_size = 0
 current_game = []
 games_written = 0
