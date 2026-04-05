@@ -89,7 +89,7 @@ df = spark.createDataFrame(parsed_rdd, schema=schema)
 # -------------------------------
 # Filters / transformations
 # -------------------------------
-df = df.filter(df.num_moves > 10)
+# df = df.filter(df.num_moves > 10)
 
 # -------------------------------
 # Write to MongoDB
