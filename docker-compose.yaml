@@ -41,7 +41,7 @@ services:
       - ./data:/app/data
     command: >
       bash -c "
-        sleep 60 &&
+        sleep 3 0 &&
         python src/ingestion/run_hdfs.py &&
         python src/processing/process_games.py
       "

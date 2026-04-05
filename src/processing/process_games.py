@@ -1,43 +1,57 @@
-import chess.pgn as chess
-import pyspark
+import chess.pgn
+import io
+import logging
 from pyspark.sql import SparkSession
-from hdfs import InsecureClient
 
 
-def split_games(partition):
-    print("in function.")
-    buffer = ""
-    for line in partition:
-        print("line.")
-        if "[Event" in line and buffer: 
-            yield buffer
-            buffer = ""
-        else:
-            buffer += line + "\n"
-    if buffer:
-        yield buffer
-        
-client = InsecureClient('http://localhost:9870', user='root')
+# -------------------------------
+# 1. Spark setup
+# -------------------------------
+logging.basicConfig(level=logging.INFO)
+
 spark = SparkSession.builder \
     .appName("Chess Data Processing") \
     .master("local[*]") \
     .config("spark.driver.memory", "6g") \
     .config("spark.executor.memory", "6g") \
     .getOrCreate()
-spark = spark.sparkContext
 
-raw_games = spark.textFile(
+sc = spark.sparkContext
+
+
+# -------------------------------
+# 2. Read raw PGN from HDFS
+# -------------------------------
+raw_rdd = sc.textFile(
     "hdfs://namenode:9000/chess-data/raw/lichess/reduced_lichess.pgn",
     minPartitions=100
 )
-print("poopie")
 
-raw_games.mapPartitions(split_games)
 
+# -------------------------------
+# 3. Split into individual games
+# -------------------------------
+def split_games(partition):
+    buffer = ""
+    for line in partition:
+        if "[Event" in line and buffer:
+            yield buffer
+            buffer = line + "\n"
+        else:
+            buffer += line + "\n"
+    if buffer:
+        yield buffer
+
+
+games_rdd = raw_rdd.mapPartitions(split_games)
+
+
+# -------------------------------
+# 4. Parse each game
+# -------------------------------
 def parse_game(pgn_text):
     try:
-        game = chess.read_game(pgn_text)
-        print(str(game))
+        game = chess.pgn.read_game(io.StringIO(pgn_text))
         if game is None:
             return None
 
@@ -58,7 +72,36 @@ def parse_game(pgn_text):
             "num_moves": len(moves)
         }
 
-    except Exception as e:
+    except Exception:
         return None
 
-parsed_rdd = raw_games.map(parse_game)
+
+parsed_rdd = games_rdd.map(parse_game).filter(lambda x: x is not None)
+
+
+# -------------------------------
+# 5. Convert to DataFrame
+# -------------------------------
+df = spark.createDataFrame(parsed_rdd)
+
+
+# -------------------------------
+# 6. Clean data
+# -------------------------------
+df = df.filter(df.num_moves > 0)
+
+
+# -------------------------------
+# 7. Write to HDFS
+# -------------------------------
+df.write.mode("overwrite").parquet(
+    "hdfs://namenode:9000/chess-data/processed/games"
+)
+
+
+# -------------------------------
+# 8. Stop Spark
+# -------------------------------
+spark.stop()
+
+print("done")
