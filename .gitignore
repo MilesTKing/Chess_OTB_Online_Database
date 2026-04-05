@@ -4,3 +4,4 @@
 data/raw/lichess/
 data/raw/processed/
 .venv/
+logs/

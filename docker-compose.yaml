@@ -1,4 +1,11 @@
 services:
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
@@ -37,15 +44,20 @@ services:
     container_name: spark
     depends_on:
       - namenode
+      - mongodb
     volumes:
       - ./data:/app/data
+      - .:/app
     command: >
       bash -c "
-        sleep 3 0 &&
+        sleep 30 &&
         python src/ingestion/run_hdfs.py &&
-        python src/processing/process_games.py
-      "
+        python src/processing/process_pgn.py
+        python src/processing/process_OTB.py
+               "
 
+# python src/processing/process_pgn.py               
 volumes:
   namenode:
   datanode:
+  mongo_data:
