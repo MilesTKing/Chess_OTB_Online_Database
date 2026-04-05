@@ -2,19 +2,13 @@ import chess.pgn
 import io
 from pyspark.sql import SparkSession
 import logging
-from pyspark.sql.types import *
-from parquet_schema import schema
+from src.processing.game_schema import schema
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("chess-pipeline")
 handler = logging.FileHandler("/app/logs/pipeline.log")
 logger.addHandler(handler)
-# from pymongo import MongoClient
-# 
-# 
-# # -------------------------------
-# # Mongo writer
-# # -------------------------------
+
 spark = SparkSession.builder \
     .appName("Process PGN") \
     .master("local[*]") \
@@ -23,8 +17,7 @@ spark = SparkSession.builder \
     .config("spark.jars.packages","org.mongodb.spark:mongo-spark-connector_2.12:10.6.1") \
     .config("spark.mongodb.write.connection.uri", "mongodb://mongodb:27017/chess.games") \
     .getOrCreate()
-
-sc = spark.sparkContext
+sc = spark.sparkContext 
 # -------------------------------
 # Split PGN into games
 # -------------------------------
@@ -39,7 +32,6 @@ def split_games(partition):
             buffer += line + "\n"
     if buffer:
         yield buffer
-
 
 # -------------------------------
 # Parse PGN
@@ -59,7 +51,7 @@ def parse_game(pgn_text):
             moves.append(node.move.uci())
 
         return {
-            "source": "lichess",
+            "source": "pgn",
             "event": headers.get("Event"),
             "white": headers.get("White"),
             "black": headers.get("Black"),
@@ -79,17 +71,9 @@ def parse_game(pgn_text):
 # -------------------------------
 # Main
 # -------------------------------
-spark = SparkSession.builder \
-    .appName("Process PGN") \
-    .master("local[*]") \
-    .config("spark.driver.memory", "6g") \
-    .config("spark.executor.memory", "6g") \
-    .getOrCreate()
-
-sc = spark.sparkContext
 
 raw_rdd = sc.textFile(
-    "hdfs://namenode:9000/chess-data/raw/lichess/super_reduced_lichess.pgn",
+    "hdfs://namenode:9000/chess-data/raw/pgn/super_reduced_lichess.pgn",
     minPartitions=100
 )
 logger.info("Splitting games")
@@ -106,13 +90,6 @@ df = spark.createDataFrame(parsed_rdd, schema=schema)
 # Filters / transformations
 # -------------------------------
 df = df.filter(df.num_moves > 10)
-
-# example rating filter
-# df = df.filter(
-#     (df.white_elo.isNull()) |
-#     (df.black_elo.isNull()) |
-#     (abs(df.white_elo - df.black_elo) < 400)
-# )
 
 # -------------------------------
 # Write to MongoDB
