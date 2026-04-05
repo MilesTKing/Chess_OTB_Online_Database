@@ -4,7 +4,7 @@ lichess_file = Path('../../data/raw/lichess/lichess.pgn')
 reduced_file = Path('../../data/raw/lichess/reduced_lichess.pgn')
 
 
-max_file_size = 10000
+max_file_size = 10000000000
 file_size = 0
 current_game = []
 games_written = 0
