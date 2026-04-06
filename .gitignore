@@ -1,7 +1,6 @@
 *.db
 *.db3
 *.sqlite3
-data/raw/pgn/
-data/raw/processed/
+data/
 .venv/
 __pycache__

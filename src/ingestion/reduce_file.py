@@ -1,41 +1,56 @@
 from pathlib import Path
-import time
-lichess_file = Path('../../data/raw/pgn/reduced_lichess.pgn')
-reduced_file = Path('../../data/raw/pgn/super_reduced_lichess.pgn')
+import os
+import logging
 
+logger = logging.getLogger(__name__)
+DATA_ROOT = Path('../../data/raw')
+MAX_FILE_SIZE = 10000000000  # 10GB
 
-max_file_size = 10000000
-file_size = 0
-current_game = []
-games_written = 0
+def reduce_file(infile: Path, outfile: Path, max_size: int):
+    file_size = 0
+    current_game = []
 
-with open(lichess_file, 'r', encoding='utf-8') as infile, \
-        open(reduced_file, 'w', encoding='utf-8') as outfile:
+    with open(infile, 'r') as infile, open(outfile, 'w') as outfile:
+        for line in infile:
+            # All pgn games begin with [Event by definition, so it's used as game delimiter
+            if '[Event' in line:
+                if current_game:
+                    game_str = ''.join(current_game)
+                    game_bytes = len(game_str.encode('utf-8'))
 
-    for line in infile:
-        if '[Event' in line:
-            # If we already have a game buffered, write it
-            if current_game:
-                event = line.partition('[Event')[1]
-                event_details = line.partition('[Event')[2]
-                event = event + event_details
-                current_game.append(line.split('[Event')[0])
-                game_str = ''.join(current_game)
-                # Stop if writing would exceed max size
-                if file_size + len(game_str.encode('utf-8')) > max_file_size:
-                    break
+                    if file_size + game_bytes > max_size:
+                        break
 
-                outfile.write(game_str)
-                file_size += len(game_str.encode('utf-8'))
-                games_written += 1
+                    outfile.write(game_str)
+                    file_size += game_bytes
+                    current_game = []
 
-                current_game = [event]
-                line = ''
-        if line != '':
             current_game.append(line)
 
-    # Write last game if needed
-    if current_game and file_size < max_file_size:
-        game_str = ''.join(current_game)
-        if file_size + len(game_str.encode('utf-8')) <= max_file_size:
-            outfile.write(game_str)
+        # Write game
+        if current_game:
+            game_str = ''.join(current_game)
+            game_bytes = len(game_str.encode('utf-8'))
+
+            if file_size + game_bytes <= max_size:
+                outfile.write(game_str)
+
+
+def process_all_files():
+    # Gets all pgn files
+    for file in DATA_ROOT.rglob("*.pgn"):
+        print(f"Reducing {file}")
+        size = os.path.getsize(file)
+
+        # Skips reduced files
+        if file.stem.endswith("_reduced"):
+            continue
+
+        # Skips files under 10GB
+        if size <= MAX_FILE_SIZE:
+            print(f"Skipping file: {file}")
+            continue
+
+        output_file = file.with_name(f"{file.stem}_reduced.pgn")
+        reduce_file(file, output_file, MAX_FILE_SIZE)
+process_all_files()
