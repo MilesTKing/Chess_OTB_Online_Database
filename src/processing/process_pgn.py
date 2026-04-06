@@ -22,7 +22,6 @@ sc = spark.sparkContext
 # Split PGN into games
 # -------------------------------
 def split_games(partition):
-    logger.info("Splitting games")
     buffer = ""
     for line in partition:
         if "[Event" in line and buffer:
@@ -51,17 +50,18 @@ def parse_game(pgn_text):
             moves.append(node.move.uci())
 
         return {
-            "source": "pgn",
-            "event": headers.get("Event"),
-            "white": headers.get("White"),
-            "black": headers.get("Black"),
-            "result": headers.get("Result"),
-            "moves": moves,
-            "num_moves": len(moves),
-            "white_elo": int(headers.get("WhiteElo")) if headers.get("WhiteElo") else None,
-            "black_elo": int(headers.get("BlackElo")) if headers.get("BlackElo") else None,
-            "year": None,
-            "month": None
+            "Event": headers.get("Event"),
+            "UTC_Date": headers.get("UTCDate"),
+            "UTC_Time": headers.get("UTCTime"),
+            "Time_Control": headers.get("TimeControl"),
+            "White_Player": headers.get("White"),
+            "Black_Player": headers.get("Black"),
+            "White_Elo": int(headers.get("WhiteElo")) if headers.get("WhiteElo") else None,
+            "Black_Elo": int(headers.get("BlackElo")) if headers.get("BlackElo") else None,
+            "Result": headers.get("Result"),
+            "Moves": moves,
+            "Move_Count": len(moves),
+            "Eco": headers.get("ECO"),
         }
 
     except Exception:
@@ -85,7 +85,8 @@ logger.info("Creating Dataframes")
 schema = schema
 
 df = spark.createDataFrame(parsed_rdd, schema=schema)
-
+df.printSchema()
+df.show(5,truncate=False)
 # -------------------------------
 # Filters / transformations
 # -------------------------------
