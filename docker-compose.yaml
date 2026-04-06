@@ -53,6 +53,7 @@ services:
         sleep 30 &&
         python src/ingestion/run_hdfs.py &&
         python src/processing/process_pgn.py
+        python src/storage/store_mongo.py
                "
 
 # python src/processing/process_pgn.py               
