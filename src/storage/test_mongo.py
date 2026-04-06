@@ -8,20 +8,23 @@ collection = db["games"]
 count = collection.count_documents({})
 print(f"Total games in DB: {count}")
 
-print("\nSample games:")
+print("\n5 random Games:")
 for doc in collection.find().limit(5):
     print(doc)
 
-print("\nGames with > 50 moves:")
-for doc in collection.find({"Move_Count": {"$gt": 50}}).limit(5):
+print("\n5 Games with > 100 moves:")
+for doc in collection.find({"Move_Count": {"$gt": 100}}).limit(5):
     print(doc)
 
-print("\nGames with White Elo > 2000:")
+print("\n5 Games with White Elo > 2000:")
 for doc in collection.find({"White_Elo": {"$gt": 2000}}).limit(5):
     print(doc)
-
-print("\nFIDE games:")
-for doc in collection.find({"rating_type": "fide"}).limit(5):
+print("\n5 Games with Black Elo < 2000:")
+for doc in collection.find({"White_Elo": {"$gt": 2000}}).limit(5):
+    print(doc)
+    
+print("\n5 Over the board games:")
+for doc in collection.find({"rating_type": "otb"}).limit(5):
     print(doc)
 
 client.close()
