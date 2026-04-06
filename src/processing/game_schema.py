@@ -13,5 +13,7 @@ schema = StructType([
     StructField("Moves", ArrayType(StringType()), True),
     StructField("Move_Count", IntegerType(), True),
     StructField("ECO", StringType(), True),
+    StructField("Round", StringType(), True),
+    StructField("Rating_Type", StringType(), True),
 ])
 
