@@ -7,6 +7,7 @@ frequencies correlation to skill rating.
 ## Setup:
 1. Move directories in docs/MockData to root/data/raw. They contain truncated game data from actual runs.
    - The lichess data can be downloaded from https://database.lichess.org/#standard_games; files can be up to 900GB when unzipped, so I recommend using the example data.
+   - The over the board data can be downloaded at https://lumbrasgigabase.com/en/download-in-pgn-format-en/
 2. Install and setup Docker Desktop https://www.docker.com/get-started/
 3. Open Docker Desktop to run Docker engine
 ## Environment Setup:
