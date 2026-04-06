@@ -24,7 +24,10 @@ for doc in collection.find({"White_Elo": {"$gt": 2000}}).limit(5):
     print(doc)
     
 print("\n5 Over the board games:")
-for doc in collection.find({"rating_type": "otb"}).limit(5):
+for doc in collection.find({"Rating_Type": "otb"}).limit(5):
+    print(doc)
+print("\n5 Games where Time Control is not None:")
+for doc in collection.find({"Time_Control": {"$ne": None}}).limit(5):
     print(doc)
 
 client.close()

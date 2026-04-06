@@ -1,6 +1,5 @@
 *.db
 *.db3
 *.sqlite3
-data/
 .venv/
 __pycache__

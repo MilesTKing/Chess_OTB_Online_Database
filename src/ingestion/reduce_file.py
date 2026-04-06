@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 DATA_ROOT = Path('../../data/raw')
-MAX_FILE_SIZE = 1000000  # 10GB
+MAX_FILE_SIZE = 1000000  # 1MB for example run.
 
 def reduce_file(infile: Path, outfile: Path, max_size: int):
     file_size = 0
@@ -60,3 +60,4 @@ def process_all_files():
         output_file = file.with_name(f"{file.stem}_reduced.pgn")
         reduce_file(file, output_file, MAX_FILE_SIZE)
 process_all_files()
+print("Done.")
