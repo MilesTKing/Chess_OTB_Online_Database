@@ -12,8 +12,7 @@ schema = StructType([
     StructField("Result", StringType(), True),
     StructField("Moves", ArrayType(StringType()), True),
     StructField("Move_Count", IntegerType(), True),
-    StructField("ECO", StringType(), True),
-    StructField("Round", StringType(), True),
+    StructField("ECO", StringType(), True),  # Standard chess opening code
+    StructField("Round", StringType(), True),  # Chess tournament round
     StructField("Rating_Type", StringType(), True),
 ])
-
