@@ -50,5 +50,7 @@ python src/storage/test_mongo.py
 
 ```  
 
+## Sample Output:
+![Example Transformation](docs/Screenshots/Transformation_Example.png "Example Transformation")
 ## Project Status:
 The data pipeline has been implemented end to end.
