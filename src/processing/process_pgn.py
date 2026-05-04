@@ -77,6 +77,8 @@ def safe_int(value):
 def parse_partition(partition):
     for pgn_text in partition:
         try:
+            has_clk = "[%clk" in pgn_text
+
             lines = pgn_text.split("\n")
             headers = {}
             moves_section = False
@@ -98,10 +100,17 @@ def parse_partition(partition):
 
             moves_str = " ".join(moves_raw)
 
+            moves_str = re.sub(r"\{[^}]*\}", "", moves_str)
+
             tokens = moves_str.split()
+
             moves = [
                 t for t in tokens
-                if not t[0].isdigit() and t not in ["1-0", "0-1", "1/2-1/2", "*"]
+                if not t.startswith("{")
+                   and not t.startswith("}")
+                   and "[%clk" not in t
+                   and not t[0].isdigit()
+                   and t not in ["1-0", "0-1", "1/2-1/2", "*"]
             ]
 
             raw_time_control = headers.get("TimeControl")
@@ -109,6 +118,10 @@ def parse_partition(partition):
 
             site = (headers.get("Site") or "").lower()
             event = (headers.get("Event") or "").lower()
+
+            if has_clk:
+                logger.info("Detected online game via clk annotations → setting site to 'lichess'")
+                site = "lichess"
 
             if "lichess" in site:
                 rating_type = "lichess"
