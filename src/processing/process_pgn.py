@@ -41,18 +41,15 @@ def normalize_time_control(tc):
         return None
     try:
         tc = tc.lower()
-        # Lichess format: min + bonus_time
         if "+" in tc and "/" not in tc and tc.replace("+", "").isdigit():
             base, inc = tc.split("+")
             return f"{int(base) // 60}+{int(inc)}"
 
-        # fide format: "40/7200:3600"
         if "/" in tc:
             main_part = tc.split(":")[0]
             seconds = int(main_part.split("/")[1])
             return f"{seconds // 60}+0"
 
-        # Weird text formats: 25 minutes 30 seconds
         minutes_match = re.search(r'(\d+)\s*(min|minutes)', tc)
         seconds_match = re.search(r'(\d+)\s*(sec|seconds)', tc)
 
@@ -61,7 +58,6 @@ def normalize_time_control(tc):
             increment = int(seconds_match.group(1)) if seconds_match else 0
             return f"{minutes}+{increment}"
 
-        # Only seconds: 500
         if tc.isdigit():
             return f"{int(tc) // 60}+0"
 
@@ -121,7 +117,7 @@ def parse_partition(partition):
             else:
                 rating_type = "otb"
 
-            yield {
+            record = {
                 "Event": headers.get("Event"),
                 "UTC_Date": headers.get("UTCDate"),
                 "UTC_Time": headers.get("UTCTime"),
@@ -134,9 +130,21 @@ def parse_partition(partition):
                 "Moves": moves,
                 "Move_Count": len(moves),
                 "ECO": headers.get("ECO"),
-                "Round": safe_int(headers.get("Round")),
+                "Round": headers.get("Round"),
                 "Rating_Type": rating_type
             }
+
+            if (
+                    record["Time_Control"] is None or
+                    record["White_Player"] is None or
+                    record["Black_Player"] is None or
+                    record["Result"] is None or
+                    record["Moves"] is None or len(record["Moves"]) == 0 or
+                    record["Rating_Type"] is None
+            ):
+                continue
+
+            yield record
 
         except Exception:
             continue
@@ -148,32 +156,55 @@ logger.info(f"Loading data files.")
 
 raw_rdd = sc.textFile(
     f"{data_files_path}**/*.pgn",
-    minPartitions=12  # Typically at 4*processors = 48. 12 for example data small size.
+    minPartitions=12
 )
+
+raw_count = raw_rdd.count()
+logger.info(f"Raw input line count: {raw_count}")
 
 logger.info("Splitting games")
 games_rdd = raw_rdd.mapPartitions(split_games)
+
+games_count = games_rdd.count()
+logger.info(f"Games after split: {games_count}")
+
 logger.info("Parsing games")
 parsed_rdd = games_rdd.mapPartitions(parse_partition)
-logger.info("Creating Dataframes")
 
+parsed_count = parsed_rdd.count()
+logger.info(f"Parsed games count: {parsed_count}")
+
+logger.info("Creating Dataframes")
 df = spark.createDataFrame(parsed_rdd, schema=schema)
+
+df_count_initial = df.count()
+logger.info(f"Initial DataFrame count: {df_count_initial}")
+
 df.show(5, truncate=False)
 
-# Perform transformations
 logger.info("Performing transformations")
+
 df = df.filter(col("Move_Count") > 10)
-# Keeps games no null Elo for very old historical games sake.
+df_count_move_filter = df.count()
+logger.info(f"After Move_Count filter (>10): {df_count_move_filter}")
+
 df = df.filter(
     (col("White_Elo").isNull()) |
     (col("Black_Elo").isNull()) |
     (spark_abs(col("White_Elo") - col("Black_Elo")) < 300)
 )
-# Write to parquet files to hdfs
+df_count_elo_filter = df.count()
+logger.info(f"After Elo difference filter: {df_count_elo_filter}")
+
+df_final_count = df.count()
+logger.info(f"Final dataset count (before write): {df_final_count}")
+
 logger.info("Writing parquet files to hdfs")
 df = df.withColumn("year", split("UTC_Date", "\\.")[0]) \
     .withColumn("month", split("UTC_Date", "\\.")[1])
-df = df.coalesce(2) # Typically "df = df.repartition(12)". Set at 2 for example data small size
+
+df = df.coalesce(2)
+
 df.write \
     .mode("append") \
     .partitionBy("year", "month") \
@@ -181,5 +212,6 @@ df.write \
 
 rows = df.take(5)
 logger.info(f"Sample rows: {rows}")
+
 spark.stop()
 logger.info("PGN processing complete")
